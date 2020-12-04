@@ -1,19 +1,23 @@
 import tkinter as tk
+from tkinter.ttk import *
 from screenCreate.screenComponents import *
 
 def generateWindow():
     root = setWindowAttributes()
-    frames = generateFrames()
+    frames = generateFrames(root) 
+    # afegir les coses bé dins de cada frame...
+    setPositionOfElementsInFrame({
+        'positionFrame': 'top',
+        'frame': frames['frameButtons'],
+        'screen': root
+    })
+    setPositionOfElementsInFrame({
+        'positionFrame': 'bottom',
+        'frame': frames['frameLogs'],
+        'screen': root
+    })
 
-    # set buttons
-
-    label_a = tk.Label(master=frames['frameButtons'], text="I'm Frame of buttons")
-    label_a.pack()
-
-    label_b = tk.Label(master=frames['frameLogs'], text="I'm Frame of logs")
-    label_b.pack()
-
-    packElements({
+    packFrames({
         'frameButtons' : frames['frameButtons'],
         'frameLogs' : frames['frameLogs']
     })
