@@ -18,9 +18,14 @@ def setPositionOfElementsInFrame(dictParams):
         buttonStatistics = generateStatisticsButton({
             'frame': frameButtons
         })
+
+        buttonListReminders = generateButtonListReminders({
+            'frame': frameButtons
+        })
         
         buttonReminders.pack(padx=5, pady=5, side="left")
         buttonStatistics.pack(padx=5, pady=5, side="left")
+        buttonListReminders.pack(padx=5, pady=5, side="left")
         frameButtons.pack()
     
     elif dictParams['positionFrame'] == 'bottom':
@@ -81,6 +86,9 @@ def getProgramIcon():
         if "logoLogsSport.ico" in files:
             return os.path.join(root, "logoLogsSport.ico")
     return ""
+
+def generateButtonListReminders(configParams):
+    return tk.Button(master=configParams['frame'], text="Llistar recordatoris") #falta la crida a la funcio
 
 def generateButtonReminders(configParams):
     return tk.Button(master=configParams['frame'], text="Crear recordatori") #falta la crida a la funcio
