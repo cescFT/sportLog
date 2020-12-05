@@ -120,7 +120,7 @@ def generateDeleteLogButton(configParams):
 
 def generateCreateButton(configParams):
     buttonCreateLog = tk.Button(master = configParams['frame'], text="Crear Log")
-    buttonCreateLog['command'] = functools.partial(buttonCreateListener,configParams['screen'], buttonCreateLog)
+    buttonCreateLog['command'] = functools.partial(buttonCreateLogListener,configParams['screen'], buttonCreateLog)
     return buttonCreateLog
 
 def generateFrames(screen):

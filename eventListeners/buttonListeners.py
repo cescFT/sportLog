@@ -1,13 +1,28 @@
+import os
+import sys
 import tkinter as tk
 import functools
 from eventListeners.screenActions import *
 
-def buttonCreateListener(mainScreen, buttonCreateLog):
+def getIconOfSpecificScreen(screenName):
+    basedir = os.path.dirname(sys.modules['__main__'].__file__)
+    for root, dirs, files in os.walk(basedir):
+        if screenName == 'createLogScreen' and "plus.ico" in files:
+            return os.path.join(root, "plus.ico")
+    return ""
+
+def buttonCreateLogListener(mainScreen, buttonCreateLog):
     screenFormCreateLog = tk.Toplevel(mainScreen)
+    screenFormCreateLog.geometry("600x400")
+    screenFormCreateLog.minsize(200, 200)
+    screenIcon = getIconOfSpecificScreen('createLogScreen')
+    if screenIcon:
+        screenFormCreateLog.iconbitmap(screenIcon)
+    screenFormCreateLog.winfo_toplevel().title("Sport log - CREAR LOG")
     screenFormCreateLog.focus_set()
     buttonCreateLog["state"] = "disabled"
-
-    #SpLog-CreateScreen ... do form
+    #TODO
+    #frameForm = 
 
     screenFormCreateLog.protocol("WM_DELETE_WINDOW", functools.partial(onCloseCreateLogForm, screenFormCreateLog, buttonCreateLog))
 
