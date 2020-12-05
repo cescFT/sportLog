@@ -12,14 +12,17 @@ def setPositionOfElementsInFrame(dictParams):
         labelInfoTop.pack(padx=5, pady=20)
 
         buttonReminders = generateButtonReminders({
+            'screen': dictParams['screen'],
             'frame': frameButtons
         })
                 
         buttonStatistics = generateStatisticsButton({
+            'screen': dictParams['screen'],
             'frame': frameButtons
         })
 
         buttonListReminders = generateButtonListReminders({
+            'screen': dictParams['screen'],
             'frame': frameButtons
         })
         
@@ -34,17 +37,23 @@ def setPositionOfElementsInFrame(dictParams):
         labelInfoDB = tk.Label(master=dictParams['frame'], text="Accions log:")
         labelInfoDB.pack()
 
+        tree = ttk.Treeview(frameTree)
+
         buttonCreate = generateCreateButton({
             'frame': frameButtonsLogActions,
             'screen': dictParams['screen']
         })
 
         buttonEditLog = generateEditLogButton({
-            'frame': frameButtonsLogActions
+            'screen': dictParams['screen'],
+            'frame': frameButtonsLogActions,
+            'treeView': tree
         })
 
         buttonDeleteLog = generateDeleteLogButton({
-            'frame': frameButtonsLogActions
+            'screen': dictParams['screen'],
+            'frame': frameButtonsLogActions,
+            'treeView': tree
         })
 
         buttonCreate.pack(side="left", padx=5, pady=5)
@@ -52,7 +61,6 @@ def setPositionOfElementsInFrame(dictParams):
         buttonDeleteLog.pack(side="left", padx=5, pady=5)
         frameButtonsLogActions.pack()
 
-        tree = ttk.Treeview(frameTree)
         tree["columns"] = ("C1", "C2", "C3", "C4")
         tree.column("#0", width=60, minwidth=60, stretch=tk.NO)
         tree.column("C1", width=200, minwidth=200, stretch=tk.NO)
@@ -67,10 +75,8 @@ def setPositionOfElementsInFrame(dictParams):
 
         
         for i in range(20):
-            item = tree.insert("", i, text="Log {}".format(i), values=("esport","durada","diaesport", "dificultat"))
-            if i == 0:
-                tree.selection_set(item)
-                tree.focus(item)
+            tree.insert("", i, text="Log {}".format(i), values=("esport","durada","diaesport", "dificultat"))
+        
         vsb = ttk.Scrollbar(frameTree, orient="vertical", command=tree.yview)
         tree.configure(yscrollcommand=vsb.set)
         
@@ -88,22 +94,34 @@ def getProgramIcon():
     return ""
 
 def generateButtonListReminders(configParams):
-    return tk.Button(master=configParams['frame'], text="Llistar recordatoris") #falta la crida a la funcio
+    buttonListReminders = tk.Button(master=configParams['frame'], text="Llistar recordatoris")
+    buttonListReminders['command'] = functools.partial(buttonListRemindersListener ,configParams['screen'], buttonListReminders)
+    return buttonListReminders
 
 def generateButtonReminders(configParams):
-    return tk.Button(master=configParams['frame'], text="Crear recordatori") #falta la crida a la funcio
+    buttonCreateReminder = tk.Button(master=configParams['frame'], text="Crear recordatori")
+    buttonCreateReminder['command'] = functools.partial(buttonCreateReminderListener ,configParams['screen'], buttonCreateReminder)
+    return buttonCreateReminder
 
 def generateStatisticsButton(configParams):
-    return tk.Button(master=configParams['frame'], text="Estadístiques") #falta la crida a la funcio
+    buttonStatistics = tk.Button(master=configParams['frame'], text="Estadístiques")
+    buttonStatistics['command'] = functools.partial(buttonStatisticsListener ,configParams['screen'], buttonStatistics)
+    return buttonStatistics
 
 def generateEditLogButton(configParams):
-    return tk.Button(master=configParams['frame'], text="Editar log") #falta la crida a la funcio
+    buttonEditLog = tk.Button(master=configParams['frame'], text="Editar log(s)")
+    buttonEditLog['command'] = functools.partial(buttonEditLogListener ,configParams['screen'], buttonEditLog, configParams['treeView'])
+    return buttonEditLog
 
 def generateDeleteLogButton(configParams):
-    return tk.Button(master=configParams['frame'], text="Eliminar log") #falta la crida a la funcio
+    buttonDeleteLog = tk.Button(master=configParams['frame'], text="Eliminar log")
+    buttonDeleteLog['command'] = functools.partial(buttonDeleteLogListener ,configParams['screen'], buttonDeleteLog, configParams['treeView'])
+    return buttonDeleteLog
 
 def generateCreateButton(configParams):
-    return tk.Button(master = configParams['frame'], command = functools.partial(buttonCreateListener,configParams['screen']), text="Crear Log")
+    buttonCreateLog = tk.Button(master = configParams['frame'], text="Crear Log")
+    buttonCreateLog['command'] = functools.partial(buttonCreateListener,configParams['screen'], buttonCreateLog)
+    return buttonCreateLog
 
 def generateFrames(screen):
     frame_buttons = tk.Frame(master=screen, height=100)
