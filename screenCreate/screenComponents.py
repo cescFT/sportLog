@@ -94,32 +94,32 @@ def getProgramIcon():
     return ""
 
 def generateButtonListReminders(configParams):
-    buttonListReminders = tk.Button(master=configParams['frame'], text="Llistar recordatoris")
+    buttonListReminders = ttk.Button(master=configParams['frame'], text="Llistar recordatoris")
     buttonListReminders['command'] = functools.partial(buttonListRemindersListener ,configParams['screen'], buttonListReminders)
     return buttonListReminders
 
 def generateButtonReminders(configParams):
-    buttonCreateReminder = tk.Button(master=configParams['frame'], text="Crear recordatori")
+    buttonCreateReminder = ttk.Button(master=configParams['frame'], text="Crear recordatori")
     buttonCreateReminder['command'] = functools.partial(buttonCreateReminderListener ,configParams['screen'], buttonCreateReminder)
     return buttonCreateReminder
 
 def generateStatisticsButton(configParams):
-    buttonStatistics = tk.Button(master=configParams['frame'], text="Estadístiques")
+    buttonStatistics = ttk.Button(master=configParams['frame'], text="Estadístiques")
     buttonStatistics['command'] = functools.partial(buttonStatisticsListener ,configParams['screen'], buttonStatistics)
     return buttonStatistics
 
 def generateEditLogButton(configParams):
-    buttonEditLog = tk.Button(master=configParams['frame'], text="Editar log(s)")
+    buttonEditLog = ttk.Button(master=configParams['frame'], text="Editar log(s)")
     buttonEditLog['command'] = functools.partial(buttonEditLogListener ,configParams['screen'], buttonEditLog, configParams['treeView'])
     return buttonEditLog
 
 def generateDeleteLogButton(configParams):
-    buttonDeleteLog = tk.Button(master=configParams['frame'], text="Eliminar log")
+    buttonDeleteLog = ttk.Button(master=configParams['frame'], text="Eliminar log")
     buttonDeleteLog['command'] = functools.partial(buttonDeleteLogListener ,configParams['screen'], buttonDeleteLog, configParams['treeView'])
     return buttonDeleteLog
 
 def generateCreateButton(configParams):
-    buttonCreateLog = tk.Button(master = configParams['frame'], text="Crear Log")
+    buttonCreateLog = ttk.Button(master = configParams['frame'], text="Crear Log")
     buttonCreateLog['command'] = functools.partial(buttonCreateLogListener,configParams['screen'], buttonCreateLog)
     return buttonCreateLog
 
