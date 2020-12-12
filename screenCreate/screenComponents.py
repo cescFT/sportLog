@@ -115,7 +115,7 @@ def generateEditLogButton(configParams):
 
 def generateDeleteLogButton(configParams):
     buttonDeleteLog = ttk.Button(master=configParams['frame'], text="Eliminar log")
-    buttonDeleteLog['command'] = functools.partial(buttonDeleteLogListener ,configParams['screen'], buttonDeleteLog, configParams['treeView'])
+    buttonDeleteLog['command'] = functools.partial(buttonDeleteLogListener, configParams['treeView'])
     return buttonDeleteLog
 
 def generateCreateButton(configParams):

@@ -20,7 +20,3 @@ def onCloseStatistics(screenStatistics, buttonStatistics):
 def onCloseEditLog(screenEditLog, buttonEditLog):
     buttonEditLog['state'] = 'normal'
     screenEditLog.destroy()
-
-def onCloseDeleteLog(screenDeleteLog, buttonDeleteLog):
-    buttonDeleteLog['state'] = 'normal'
-    screenDeleteLog.destroy()

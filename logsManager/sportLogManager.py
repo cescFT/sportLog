@@ -4,3 +4,9 @@
 
 def saveNewSportLog():
     print('desar les merdes')
+
+def editSportLog():
+    print('editar')
+
+def deleteSportLog():
+    print('esborrar')

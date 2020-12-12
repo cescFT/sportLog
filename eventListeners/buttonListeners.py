@@ -5,6 +5,8 @@ import functools
 from tkinter import ttk
 from eventListeners.screenActions import *
 from logsManager.sportLogManager import *
+from logsManager.reminderManager import *
+from logsManager.statisticsManager import *
 from tkcalendar import Calendar, DateEntry
 import datetime
 
@@ -46,6 +48,10 @@ def getIconOfSpecificScreen(screenName):
             return os.path.join(root, "calendar.ico")
         elif screenName == 'editLogScreen' and "edit.ico" in files:
             return os.path.join(root, "edit.ico")
+        elif screenName == 'createReminder' or screenName == 'remindersList' and "reminder.ico" in files:
+            return os.path.join(root, "reminder.ico")
+        elif screenName == 'statisticsScreen' and "statistics.ico" in files:
+            return os.path.join(root, "statistics.ico")
     return ""
 
 def buttonCreateLogListener(mainScreen, buttonCreateLog):
@@ -133,51 +139,212 @@ def buttonCreateLogListener(mainScreen, buttonCreateLog):
     screenFormCreateLog.protocol("WM_DELETE_WINDOW", functools.partial(onCloseCreateLogForm, screenFormCreateLog, buttonCreateLog))
 
 def buttonEditLogListener(mainScreen, buttonEditLog, treeView):
-    screenEditLog = tk.Toplevel(mainScreen)
-    screenEditLog.geometry("600x400")
-    screenEditLog.minsize(200, 200)
-    screenEditLogIcon = getIconOfSpecificScreen('editLogScreen')
-    if screenEditLogIcon:
-        screenEditLog.iconbitmap(screenEditLogIcon)
-    screenEditLog.winfo_toplevel().title("Sport log - EDITAR LOG(s) SELECCIONATS")
-    screenEditLog.focus_set()
-    buttonEditLog['state'] = 'disabled'
+    if treeView.selection():
+        screenEditLog = tk.Toplevel(mainScreen)
+        screenEditLog.state('zoomed')
+        screenEditLogIcon = getIconOfSpecificScreen('editLogScreen')
+        if screenEditLogIcon:
+            screenEditLog.iconbitmap(screenEditLogIcon)
+        screenEditLog.winfo_toplevel().title("Sport log - EDITAR LOG(s) SELECCIONATS")
+        screenEditLog.focus_set()
+        buttonEditLog['state'] = 'disabled'
 
-    #SpLog-CreateScreen ... do screen
-    
-    for i in treeView.selection():
-        print("you clicked on", treeView.item(i))
+        sportOptions = [
+            'esport 1',
+            'esport 2',
+            'esport 3',
+            'esport'
+        ]
 
-    screenEditLog.protocol("WM_DELETE_WINDOW", functools.partial(onCloseEditLog, screenEditLog, buttonEditLog))
+        difficultyOptions = [
+            '1-Molt fàcil',
+            '2-Fàcil',
+            '3-Mitjà',
+            '4-Mitjà alt',
+            '5-Difícil',
+            '6-Extremadament difícil',
+            'dificultat'
+        ]
+
+        mainFrameScreenEditLog = tk.Frame(screenEditLog)
+        mainFrameScreenEditLog.pack(fill=tk.BOTH, expand=True)
+        canvasEditLog = tk.Canvas(mainFrameScreenEditLog)
+        canvasEditLog.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
+        scrollbarScreen = ttk.Scrollbar(mainFrameScreenEditLog, orient=tk.VERTICAL, command=canvasEditLog.yview)
+        scrollbarScreen.pack(side=tk.RIGHT, fill=tk.Y)
+
+        canvasEditLog.configure(yscrollcommand=scrollbarScreen.set)
+        canvasEditLog.bind('<Configure>', lambda event: canvasEditLog.configure(scrollregion=canvasEditLog.bbox("all")))
+
+        frameFormEditLog = tk.Frame(canvasEditLog)
+
+        canvasEditLog.create_window((frameFormEditLog.winfo_screenwidth()/2,frameFormEditLog.winfo_screenwidth()/2), window=frameFormEditLog)
+        
+        
+        for i in treeView.selection():
+            print("you clicked on", treeView.item(i))
+            frameFormEditLogForm = tk.Frame(frameFormEditLog, borderwidth=2, relief="groove")
+            # 1-Sport dropdown
+            frameSportSelect = tk.Frame(frameFormEditLogForm)
+            labelSportSelect = tk.Label(frameSportSelect ,text = "Selecciona esport").grid(row=0, column=0, padx=4, pady=10)
+            dropdownSport = ttk.Combobox(frameSportSelect, state="readonly")
+            dropdownSport['values'] = sportOptions
+            dropdownSport.current(sportOptions.index(treeView.item(i)['values'][0]))
+            dropdownSport.bind('<<ComboboxSelected>>', lambda event: getValueSelectedSport(dropdownSport))
+            dropdownSport.grid(row=0, column=1)
+            frameSportSelect.pack(side=tk.TOP)
+            
+            # 2-SportDay
+            frameSportDay = tk.Frame(frameFormEditLogForm)
+            labelSportDay = tk.Label(frameSportDay ,text = "Dia esport").grid(row=0, column=0, padx=4, pady=10)
+            labelSportDaySelected = tk.Label(
+                frameSportDay,
+                text="{}".format(datetime.datetime.now().strftime("%Y-%m-%d")) # Modify with date getted of db
+            )
+            labelSportDaySelected.grid(row=0, column=1)
+
+            dadepickerButton = ttk.Button(frameSportDay, text='Modificar data')
+            dadepickerButton['command'] = functools.partial(selectData, screenEditLog, labelSportDaySelected)
+            dadepickerButton.grid(row=0, column=2)
+            frameSportDay.pack(side=tk.TOP)
+
+            # 3- Duration
+            frameDuration = tk.Frame(frameFormEditLogForm)
+            labelTimeElapsed = tk.Label(frameDuration, text = "Durada (h,m,s)").grid(row=0, column=0, padx=4, pady=10)
+            hourPicker = tk.Spinbox(frameDuration, from_=1, to=23, wrap=True, width=5, state="readonly", textvariable=tk.IntVar(value=2)) # Modify with data of DB
+            hourPicker['command'] = functools.partial(getDurationHour,hourPicker)
+            hourPicker.grid(row=0, column=1)
+            tk.Label(frameDuration, text="h").grid(row=0,column=2)
+            minutePicker = tk.Spinbox(frameDuration, from_=0, to=59, wrap=True, width=5, state="readonly", textvariable=tk.IntVar(value=2)).grid(row=0, column=3) # Modify with data of DB
+            tk.Label(frameDuration, text="m").grid(row=0, column=4)
+            secondsPicker = tk.Spinbox(frameDuration, from_=0, to=59, wrap=True, width=5, state="readonly", textvariable=tk.IntVar(value=2)).grid(row=0, column=5) # Modify with data of DB
+            tk.Label(frameDuration, text="s").grid(row=0,column=6)
+
+            frameDuration.pack(side=tk.TOP)
+            
+            # 4- Difficculty
+            frameDifficulty = tk.Frame(frameFormEditLogForm)
+            labelDificulty = tk.Label(frameDifficulty ,text = "Dificultat").grid(row=0, column=0, padx=4, pady=10)
+
+            dropdownDifficulty = ttk.Combobox(frameDifficulty, state="readonly")
+            dropdownDifficulty['values'] = difficultyOptions
+            dropdownDifficulty.bind('<<ComboboxSelected>>', lambda event: getValueSelectedDifficulty(dropdownDifficulty))
+            dropdownDifficulty.current(difficultyOptions.index(treeView.item(i)['values'][3]))
+            dropdownDifficulty.grid(row=0, column=1)
+            frameDifficulty.pack(side=tk.TOP)
+
+            #Submit button edit log
+            frameButtonSubmitEditLog = tk.Frame(frameFormEditLogForm)
+            buttonSubmitNewLog = ttk.Button(frameButtonSubmitEditLog, text="Editar log")
+            buttonSubmitNewLog['command'] = functools.partial(editSportLog)
+            buttonSubmitNewLog.pack(padx=50, pady=50)
+            frameButtonSubmitEditLog.pack(side=tk.TOP, expand=True, fill=tk.BOTH)
+            
+            frameFormEditLogForm.pack(padx=5, pady=10)      
+
+        screenEditLog.protocol("WM_DELETE_WINDOW", functools.partial(onCloseEditLog, screenEditLog, buttonEditLog))
+    else:
+        tk.messagebox.showwarning(title="Editar log(s)", message="Selecciona almenys un dels logs mostrat en el llistat")
 
 
-def buttonDeleteLogListener(mainScreen, buttonDeleteLog, treeView):
-    screenDeleteLog = tk.Toplevel(mainScreen)
-    screenDeleteLog.focus_set()
-    buttonDeleteLog['state'] = 'disabled'
-
-    screenDeleteLog.protocol("WM_DELETE_WINDOW", functools.partial(onCloseDeleteLog, screenDeleteLog, buttonDeleteLog))
+def buttonDeleteLogListener(treeView):
+    if treeView.selection():
+        result = tk.messagebox.askquestion("Eliminar Log (s)", "Prem Si per a eliminar, altrament No.", icon='question')
+        if result == 'yes':
+            for item in treeView.selection():
+                infoToDeleteFromDB = treeView.item(item)
+                deleteSportLog() # we need to pass info to delete
+                treeView.delete(item)
+    else:
+        tk.messagebox.showwarning(title="Eliminar log(s)", message="Selecciona almenys un dels logs mostrat en el llistat per a eliminar-lo")
 
 def buttonCreateReminderListener(mainScreen, buttonCreateReminder):
     screenCreateReminders = tk.Toplevel(mainScreen)
-    screenCreateReminders.focus_set()
     buttonCreateReminder['state'] = 'disabled'
-    #SpLog-CreateScreen ... do form
+    screenCreateReminders.winfo_toplevel().title("Sport log - CREAR RECORDATORI")
+    screenCreateReminderIcon = getIconOfSpecificScreen('createReminder')
+    if screenCreateReminderIcon:
+        screenCreateReminders.iconbitmap(screenCreateReminderIcon)
+    screenCreateReminders.focus_set()
+    screenCreateReminders.geometry("700x500")
+
+    frameSportDay = tk.Frame(screenCreateReminders)
+    labelSportDay = tk.Label(frameSportDay ,text = "Dia esport").grid(row=0, column=0, padx=4, pady=10)
+    labelSportDaySelected = tk.Label(
+        frameSportDay,
+        text="{}".format(datetime.datetime.now().strftime("%Y-%m-%d")) # Modify with date getted of db
+    )
+    labelSportDaySelected.grid(row=0, column=1)
+
+    dadepickerButton = ttk.Button(frameSportDay, text='Modificar data')
+    dadepickerButton['command'] = functools.partial(selectData, screenCreateReminders, labelSportDaySelected)
+    dadepickerButton.grid(row=0, column=2)
+    frameSportDay.pack(side=tk.TOP)
+
+    sportOptions = [
+        'esport 1',
+        'esport 2',
+        'esport 3',
+        'esport'
+    ]
+
+    frameSportSelect = tk.Frame(screenCreateReminders)
+    labelSportSelect = tk.Label(frameSportSelect ,text = "Selecciona esport").grid(row=0, column=0, padx=4, pady=10)
+    dropdownSport = ttk.Combobox(frameSportSelect, state="readonly")
+    dropdownSport['values'] = sportOptions
+    dropdownSport.bind('<<ComboboxSelected>>', lambda event: getValueSelectedSport(dropdownSport))
+    dropdownSport.grid(row=0, column=1)
+    frameSportSelect.pack(side=tk.TOP)
+
+    buttonSubmitReminder = ttk.Button(screenCreateReminders, text="Desar recordatori")
+    buttonSubmitReminder['command'] = functools.partial(saveReminder)
+    buttonSubmitReminder.pack()
+
 
     screenCreateReminders.protocol("WM_DELETE_WINDOW", functools.partial(onCloseCreateReminder, screenCreateReminders, buttonCreateReminder))
 
 def buttonStatisticsListener(mainScreen, buttonStatistics):
     screenStatistics = tk.Toplevel(mainScreen)
+    screenStatistics.winfo_toplevel().title("Sport log - ESTADÍSTIQUES")
+    screenCreateReminderIcon = getIconOfSpecificScreen('statisticsScreen')
+    if screenCreateReminderIcon:
+        screenStatistics.iconbitmap(screenCreateReminderIcon)
     screenStatistics.focus_set()
+    screenStatistics.geometry("700x500")
     buttonStatistics['state'] = 'disabled'
-    #SpLog-CreateScreen ... do screen
-
+    #SpLog-CreateScreen ... do screen --> https://www.youtube.com/watch?v=8exB6Ly3nx0
+    statistics()
     screenStatistics.protocol("WM_DELETE_WINDOW", functools.partial(onCloseStatistics, screenStatistics, buttonStatistics))
 
 def buttonListRemindersListener(mainScreen, buttonListReminders):
     screenListReminders = tk.Toplevel(mainScreen)
+    screenListReminders.winfo_toplevel().title("Sport log - LLISTAT RECORDATORIS")
+    screenCreateReminderIcon = getIconOfSpecificScreen('remindersList')
+    if screenCreateReminderIcon:
+        screenListReminders.iconbitmap(screenCreateReminderIcon)
     screenListReminders.focus_set()
+    screenListReminders.geometry("700x500")
     buttonListReminders['state'] = 'disabled'
+    tk.Label(screenListReminders, text="Llistat recordatoris").pack(padx=10, pady=10)
     #SpLog-CreateScreen ... do list
+    frameTree = tk.Frame(screenListReminders)
+    tree = ttk.Treeview(frameTree)
+    tree["columns"] = ("C1", "C2")
+    tree.column("#0", width=70, minwidth=70, stretch=tk.NO)
+    tree.column("C1", width=200, minwidth=200, stretch=tk.NO)
+    tree.column("C2", width=200, minwidth=200, stretch=tk.NO)
+    tree.heading("#0", text="ID", anchor=tk.W)
+    tree.heading("C1", text="Esport", anchor=tk.W)
+    tree.heading("C2", text="Dia esport", anchor=tk.W)
 
+    for i in range(20):
+        tree.insert("", i, text="Rem. {}".format(i), values=("esport","dia esport"))
+
+    vsb = ttk.Scrollbar(frameTree, orient="vertical", command=tree.yview)
+    tree.configure(yscrollcommand=vsb.set)
+        
+
+    tree.pack(side="left", expand=True)
+    vsb.pack(side='right', fill='y')
+    frameTree.pack(padx=5, pady=5)
     screenListReminders.protocol("WM_DELETE_WINDOW", functools.partial(onCloseListReminders, screenListReminders, buttonListReminders))
