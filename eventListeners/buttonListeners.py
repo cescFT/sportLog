@@ -7,22 +7,24 @@ from eventListeners.screenActions import *
 from logsManager.sportLogManager import *
 from logsManager.reminderManager import *
 from logsManager.statisticsManager import *
+from logsManager.dbConnection import execute
 from tkcalendar import Calendar, DateEntry
 import datetime
 
-def getDurationHour(hourPicker):
-    print(hourPicker.get())
+def getDuration(spinner, durationType, infoToSave):
+    infoToSave[durationType] = spinner.get()
 
-def getValueSelectedDifficulty(dropdownDifficulty):
-    print(dropdownDifficulty.get())
+def getValueSelectedDifficulty(dropdownDifficulty, infoToSave):
+    infoToSave['dificultat'] = dropdownDifficulty.get()
 
-def getValueSelectedSport(dropdownSport):
-    print(dropdownSport.get())
+def getValueSelectedSport(dropdownSport, infoToSave):
+    infoToSave['sport'] = dropdownSport.get()
 
-def selectData(root, labelSportDaySelected):
+def selectData(root, labelSportDaySelected, infoToSave):
     def print_sel():
         print(labelSportDaySelected)
         labelSportDaySelected['text'] = cal.selection_get()
+        infoToSave['date'] = cal.selection_get()
         datepickerScreen.destroy()
 
     datepickerScreen = tk.Toplevel(root)
@@ -30,7 +32,8 @@ def selectData(root, labelSportDaySelected):
     screenCalendarIcon = getIconOfSpecificScreen('selectData')
     if screenCalendarIcon:
         datepickerScreen.iconbitmap(screenCalendarIcon)
-    datepickerScreen.focus_set()
+    datepickerScreen.wm_attributes("-topmost", 1)
+    datepickerScreen.focus_force()
     datepickerScreen.geometry("700x500")
 
     cal = Calendar(datepickerScreen,
@@ -54,7 +57,8 @@ def getIconOfSpecificScreen(screenName):
             return os.path.join(root, "statistics.ico")
     return ""
 
-def buttonCreateLogListener(mainScreen, buttonCreateLog):
+def buttonCreateLogListener(mainScreen, buttonCreateLog, treeView):
+    infoToSave = {}
     screenFormCreateLog = tk.Toplevel(mainScreen)
     screenFormCreateLog.geometry("600x400")
     screenFormCreateLog.minsize(200, 200)
@@ -62,21 +66,18 @@ def buttonCreateLogListener(mainScreen, buttonCreateLog):
     if screenIcon:
         screenFormCreateLog.iconbitmap(screenIcon)
     screenFormCreateLog.winfo_toplevel().title("Sport log - CREAR LOG")
-    screenFormCreateLog.focus_set()
+    screenFormCreateLog.wm_attributes("-topmost", 1)
+    screenFormCreateLog.focus_force()
     buttonCreateLog["state"] = "disabled"
     #CREATING FORM TO NEW LOG
     
     # 1-Sport dropdown
-    sportOptions = [
-        'esport 1',
-        'esport 2',
-        'esport 3'
-    ]
+    sportOptions = execute('SELECT nom_esport FROM esport')
     frameSportSelect = tk.Frame(screenFormCreateLog)
     labelSportSelect = tk.Label(frameSportSelect ,text = "Selecciona esport").grid(row=0, column=0, padx=4, pady=10)
     dropdownSport = ttk.Combobox(frameSportSelect, state="readonly")
     dropdownSport['values'] = sportOptions
-    dropdownSport.bind('<<ComboboxSelected>>', lambda event: getValueSelectedSport(dropdownSport))
+    dropdownSport.bind('<<ComboboxSelected>>', lambda event: getValueSelectedSport(dropdownSport, infoToSave))
     dropdownSport.grid(row=0, column=1)
     frameSportSelect.pack(side=tk.TOP)
 
@@ -87,10 +88,11 @@ def buttonCreateLogListener(mainScreen, buttonCreateLog):
         frameSportDay,
         text="{}".format(datetime.datetime.now().strftime("%Y-%m-%d"))
     )
+    infoToSave['date'] = datetime.datetime.strptime(labelSportDaySelected['text'], "%Y-%m-%d")
     labelSportDaySelected.grid(row=0, column=1)
 
     dadepickerButton = ttk.Button(frameSportDay, text='Modificar data')
-    dadepickerButton['command'] = functools.partial(selectData, screenFormCreateLog, labelSportDaySelected)
+    dadepickerButton['command'] = functools.partial(selectData, screenFormCreateLog, labelSportDaySelected, infoToSave)
     dadepickerButton.grid(row=0, column=2)
 
     frameSportDay.pack(side=tk.TOP)
@@ -99,12 +101,16 @@ def buttonCreateLogListener(mainScreen, buttonCreateLog):
     frameDuration = tk.Frame(screenFormCreateLog)
     labelTimeElapsed = tk.Label(frameDuration, text = "Durada (h,m,s)").grid(row=0, column=0, padx=4, pady=10)
     hourPicker = ttk.Spinbox(frameDuration, from_=1, to=23, wrap=True, width=5, state="readonly")
-    hourPicker['command'] = functools.partial(getDurationHour,hourPicker)
+    hourPicker['command'] = functools.partial(getDuration,hourPicker, 'hora', infoToSave)
     hourPicker.grid(row=0, column=1)
     tk.Label(frameDuration, text="h").grid(row=0,column=2)
-    minutePicker = ttk.Spinbox(frameDuration, from_=0, to=59, wrap=True, width=5, state="readonly").grid(row=0, column=3)
+    minutePicker = ttk.Spinbox(frameDuration, from_=0, to=59, wrap=True, width=5, state="readonly")
+    minutePicker['command'] = functools.partial(getDuration, minutePicker, 'minuts', infoToSave)
+    minutePicker.grid(row=0, column=3)
     tk.Label(frameDuration, text="m").grid(row=0, column=4)
-    secondsPicker = ttk.Spinbox(frameDuration, from_=0, to=59, wrap=True, width=5, state="readonly").grid(row=0, column=5)
+    secondsPicker = ttk.Spinbox(frameDuration, from_=0, to=59, wrap=True, width=5, state="readonly")
+    secondsPicker['command'] = functools.partial(getDuration, secondsPicker, 'segons', infoToSave)
+    secondsPicker.grid(row=0, column=5)
     tk.Label(frameDuration, text="s").grid(row=0,column=6)
 
     frameDuration.pack(side=tk.TOP)
@@ -113,25 +119,17 @@ def buttonCreateLogListener(mainScreen, buttonCreateLog):
     frameDifficulty = tk.Frame(screenFormCreateLog)
     labelDificulty = tk.Label(frameDifficulty ,text = "Dificultat").grid(row=0, column=0, padx=4, pady=10)
 
-    difficultyOptions = [
-        '1-Molt fàcil',
-        '2-Fàcil',
-        '3-Mitjà',
-        '4-Mitjà alt',
-        '5-Difícil',
-        '6-Extremadament difícil'
-    ]
-
+    difficultyOptions = execute ('SELECT dificultat FROM dificultat')
     dropdownDifficulty = ttk.Combobox(frameDifficulty, state="readonly")
     dropdownDifficulty['values'] = difficultyOptions
-    dropdownDifficulty.bind('<<ComboboxSelected>>', lambda event: getValueSelectedDifficulty(dropdownDifficulty))
+    dropdownDifficulty.bind('<<ComboboxSelected>>', lambda event: getValueSelectedDifficulty(dropdownDifficulty, infoToSave))
     dropdownDifficulty.grid(row=0, column=1)
     frameDifficulty.pack(side=tk.TOP)
 
     #Submit button new log
     frameButtonSubmitNewLog = tk.Frame(screenFormCreateLog)
     buttonSubmitNewLog = ttk.Button(frameButtonSubmitNewLog, text="Desar nou log")
-    buttonSubmitNewLog['command'] = functools.partial(saveNewSportLog )
+    buttonSubmitNewLog['command'] = functools.partial(saveNewSportLog, infoToSave, screenFormCreateLog, buttonCreateLog, treeView)
     buttonSubmitNewLog.pack(padx=50, pady=50)
     frameButtonSubmitNewLog.pack(side=tk.TOP, expand=True, fill=tk.BOTH)
     
@@ -141,30 +139,18 @@ def buttonCreateLogListener(mainScreen, buttonCreateLog):
 def buttonEditLogListener(mainScreen, buttonEditLog, treeView):
     if treeView.selection():
         screenEditLog = tk.Toplevel(mainScreen)
-        screenEditLog.state('zoomed')
+        screenEditLog.geometry("600x400")
         screenEditLogIcon = getIconOfSpecificScreen('editLogScreen')
         if screenEditLogIcon:
             screenEditLog.iconbitmap(screenEditLogIcon)
         screenEditLog.winfo_toplevel().title("Sport log - EDITAR LOG(s) SELECCIONATS")
-        screenEditLog.focus_set()
+        screenEditLog.wm_attributes("-topmost", 1)
+        screenEditLog.focus_force()
         buttonEditLog['state'] = 'disabled'
 
-        sportOptions = [
-            'esport 1',
-            'esport 2',
-            'esport 3',
-            'esport'
-        ]
+        sportOptions = execute("SELECT nom_esport FROM esport")
 
-        difficultyOptions = [
-            '1-Molt fàcil',
-            '2-Fàcil',
-            '3-Mitjà',
-            '4-Mitjà alt',
-            '5-Difícil',
-            '6-Extremadament difícil',
-            'dificultat'
-        ]
+        difficultyOptions = execute("SELECT dificultat FROM dificultat")
 
         mainFrameScreenEditLog = tk.Frame(screenEditLog)
         mainFrameScreenEditLog.pack(fill=tk.BOTH, expand=True)
@@ -180,17 +166,28 @@ def buttonEditLogListener(mainScreen, buttonEditLog, treeView):
 
         canvasEditLog.create_window((frameFormEditLog.winfo_screenwidth()/2,frameFormEditLog.winfo_screenwidth()/2), window=frameFormEditLog)
         
-        
         for i in treeView.selection():
-            print("you clicked on", treeView.item(i))
+            infoToSave = {}
+            infoToSave['id'] = treeView.item(i)['text'].split(" ")[1]
+            infoToSave['dificultat'] = treeView.item(i)['values'][3]
+            infoToSave['sport'] = treeView.item(i)['values'][0]
+            infoToSave['date'] = datetime.datetime.strptime(treeView.item(i)['values'][2], '%d-%m-%Y')
+            infoToSave['hora'] = treeView.item(i)['values'][1].split(":")[0].split(" ")[0]
+            infoToSave['minuts'] = treeView.item(i)['values'][1].split(":")[1].split(" ")[0]
+            infoToSave['segons'] = treeView.item(i)['values'][1].split(":")[2].split(" ")[0]
             frameFormEditLogForm = tk.Frame(frameFormEditLog, borderwidth=2, relief="groove")
             # 1-Sport dropdown
             frameSportSelect = tk.Frame(frameFormEditLogForm)
             labelSportSelect = tk.Label(frameSportSelect ,text = "Selecciona esport").grid(row=0, column=0, padx=4, pady=10)
             dropdownSport = ttk.Combobox(frameSportSelect, state="readonly")
             dropdownSport['values'] = sportOptions
-            dropdownSport.current(sportOptions.index(treeView.item(i)['values'][0]))
-            dropdownSport.bind('<<ComboboxSelected>>', lambda event: getValueSelectedSport(dropdownSport))
+            index = 0
+            for sp in sportOptions:
+                if sp[0] == treeView.item(i)['values'][0]:
+                    break
+                index = index + 1
+            dropdownSport.current(index)
+            dropdownSport.bind('<<ComboboxSelected>>', lambda event: getValueSelectedSport(dropdownSport, infoToSave))
             dropdownSport.grid(row=0, column=1)
             frameSportSelect.pack(side=tk.TOP)
             
@@ -199,25 +196,29 @@ def buttonEditLogListener(mainScreen, buttonEditLog, treeView):
             labelSportDay = tk.Label(frameSportDay ,text = "Dia esport").grid(row=0, column=0, padx=4, pady=10)
             labelSportDaySelected = tk.Label(
                 frameSportDay,
-                text="{}".format(datetime.datetime.now().strftime("%Y-%m-%d")) # Modify with date getted of db
+                text="{}".format(treeView.item(i)['values'][2])
             )
             labelSportDaySelected.grid(row=0, column=1)
 
             dadepickerButton = ttk.Button(frameSportDay, text='Modificar data')
-            dadepickerButton['command'] = functools.partial(selectData, screenEditLog, labelSportDaySelected)
+            dadepickerButton['command'] = functools.partial(selectData, screenEditLog, labelSportDaySelected, infoToSave)
             dadepickerButton.grid(row=0, column=2)
             frameSportDay.pack(side=tk.TOP)
 
             # 3- Duration
             frameDuration = tk.Frame(frameFormEditLogForm)
             labelTimeElapsed = tk.Label(frameDuration, text = "Durada (h,m,s)").grid(row=0, column=0, padx=4, pady=10)
-            hourPicker = tk.Spinbox(frameDuration, from_=1, to=23, wrap=True, width=5, state="readonly", textvariable=tk.IntVar(value=2)) # Modify with data of DB
-            hourPicker['command'] = functools.partial(getDurationHour,hourPicker)
+            hourPicker = tk.Spinbox(frameDuration, from_=1, to=23, wrap=True, width=5, state="readonly", textvariable=tk.IntVar(value=int(treeView.item(i)['values'][1].split(":")[0].split(" ")[0])))
+            hourPicker['command'] = functools.partial(getDuration,hourPicker, 'hora', infoToSave)
             hourPicker.grid(row=0, column=1)
             tk.Label(frameDuration, text="h").grid(row=0,column=2)
-            minutePicker = tk.Spinbox(frameDuration, from_=0, to=59, wrap=True, width=5, state="readonly", textvariable=tk.IntVar(value=2)).grid(row=0, column=3) # Modify with data of DB
+            minutePicker = tk.Spinbox(frameDuration, from_=0, to=59, wrap=True, width=5, state="readonly", textvariable=tk.IntVar(value=int(treeView.item(i)['values'][1].split(":")[1].split(" ")[0])))
+            minutePicker['command'] = functools.partial(getDuration,minutePicker, 'minuts', infoToSave)
+            minutePicker.grid(row=0, column=3)
             tk.Label(frameDuration, text="m").grid(row=0, column=4)
-            secondsPicker = tk.Spinbox(frameDuration, from_=0, to=59, wrap=True, width=5, state="readonly", textvariable=tk.IntVar(value=2)).grid(row=0, column=5) # Modify with data of DB
+            secondsPicker = tk.Spinbox(frameDuration, from_=0, to=59, wrap=True, width=5, state="readonly", textvariable=tk.IntVar(value=int(treeView.item(i)['values'][1].split(":")[2].split(" ")[0])))
+            secondsPicker['command'] = functools.partial(getDuration,secondsPicker, 'segons', infoToSave)
+            secondsPicker.grid(row=0, column=5)
             tk.Label(frameDuration, text="s").grid(row=0,column=6)
 
             frameDuration.pack(side=tk.TOP)
@@ -228,15 +229,20 @@ def buttonEditLogListener(mainScreen, buttonEditLog, treeView):
 
             dropdownDifficulty = ttk.Combobox(frameDifficulty, state="readonly")
             dropdownDifficulty['values'] = difficultyOptions
-            dropdownDifficulty.bind('<<ComboboxSelected>>', lambda event: getValueSelectedDifficulty(dropdownDifficulty))
-            dropdownDifficulty.current(difficultyOptions.index(treeView.item(i)['values'][3]))
+            dropdownDifficulty.bind('<<ComboboxSelected>>', lambda event: getValueSelectedDifficulty(dropdownDifficulty, infoToSave))
+            index = 0
+            for difficulty in difficultyOptions:
+                if difficulty[0] == treeView.item(i)['values'][3]:
+                    break
+                index = index + 1
+            dropdownDifficulty.current(index)
             dropdownDifficulty.grid(row=0, column=1)
             frameDifficulty.pack(side=tk.TOP)
 
             #Submit button edit log
             frameButtonSubmitEditLog = tk.Frame(frameFormEditLogForm)
             buttonSubmitNewLog = ttk.Button(frameButtonSubmitEditLog, text="Editar log")
-            buttonSubmitNewLog['command'] = functools.partial(editSportLog)
+            buttonSubmitNewLog['command'] = functools.partial(editSportLog, infoToSave, treeView, screenEditLog)
             buttonSubmitNewLog.pack(padx=50, pady=50)
             frameButtonSubmitEditLog.pack(side=tk.TOP, expand=True, fill=tk.BOTH)
             
@@ -253,53 +259,56 @@ def buttonDeleteLogListener(treeView):
         if result == 'yes':
             for item in treeView.selection():
                 infoToDeleteFromDB = treeView.item(item)
-                deleteSportLog() # we need to pass info to delete
+                deleteSportLog(infoToDeleteFromDB)
                 treeView.delete(item)
     else:
         tk.messagebox.showwarning(title="Eliminar log(s)", message="Selecciona almenys un dels logs mostrat en el llistat per a eliminar-lo")
 
 def buttonCreateReminderListener(mainScreen, buttonCreateReminder):
+    infoToSave = {}
+    infoToSave['date'] = datetime.datetime.now().date()
     screenCreateReminders = tk.Toplevel(mainScreen)
     buttonCreateReminder['state'] = 'disabled'
     screenCreateReminders.winfo_toplevel().title("Sport log - CREAR RECORDATORI")
     screenCreateReminderIcon = getIconOfSpecificScreen('createReminder')
     if screenCreateReminderIcon:
         screenCreateReminders.iconbitmap(screenCreateReminderIcon)
-    screenCreateReminders.focus_set()
+    screenCreateReminders.wm_attributes("-topmost", 1)
+    screenCreateReminders.focus_force()
     screenCreateReminders.geometry("700x500")
 
     frameSportDay = tk.Frame(screenCreateReminders)
     labelSportDay = tk.Label(frameSportDay ,text = "Dia esport").grid(row=0, column=0, padx=4, pady=10)
     labelSportDaySelected = tk.Label(
         frameSportDay,
-        text="{}".format(datetime.datetime.now().strftime("%Y-%m-%d")) # Modify with date getted of db
+        text="{}".format(datetime.datetime.now().strftime("%Y-%m-%d"))
     )
     labelSportDaySelected.grid(row=0, column=1)
 
     dadepickerButton = ttk.Button(frameSportDay, text='Modificar data')
-    dadepickerButton['command'] = functools.partial(selectData, screenCreateReminders, labelSportDaySelected)
+    dadepickerButton['command'] = functools.partial(selectData, screenCreateReminders, labelSportDaySelected, infoToSave)
     dadepickerButton.grid(row=0, column=2)
     frameSportDay.pack(side=tk.TOP)
 
-    sportOptions = [
-        'esport 1',
-        'esport 2',
-        'esport 3',
-        'esport'
-    ]
+    sportOptions = execute("SELECT nom_esport FROM esport")
 
     frameSportSelect = tk.Frame(screenCreateReminders)
     labelSportSelect = tk.Label(frameSportSelect ,text = "Selecciona esport").grid(row=0, column=0, padx=4, pady=10)
     dropdownSport = ttk.Combobox(frameSportSelect, state="readonly")
     dropdownSport['values'] = sportOptions
-    dropdownSport.bind('<<ComboboxSelected>>', lambda event: getValueSelectedSport(dropdownSport))
+    dropdownSport.bind('<<ComboboxSelected>>', lambda event: getValueSelectedSport(dropdownSport, infoToSave))
     dropdownSport.grid(row=0, column=1)
     frameSportSelect.pack(side=tk.TOP)
 
-    buttonSubmitReminder = ttk.Button(screenCreateReminders, text="Desar recordatori")
-    buttonSubmitReminder['command'] = functools.partial(saveReminder)
-    buttonSubmitReminder.pack()
-
+    frameHour = tk.Frame(screenCreateReminders)
+    labelHour = tk.Label(frameHour, text="Escriu la hora (hh:mm)").grid(row=0, column=0, padx=4, pady=10)
+    textboxHour = ttk.Entry(frameHour)
+    
+    buttonSubmitReminder = ttk.Button(frameHour, text="Desar recordatori")
+    buttonSubmitReminder['command'] = functools.partial(saveReminder, infoToSave, buttonCreateReminder, screenCreateReminders, textboxHour)
+    buttonSubmitReminder.grid(row=1, column=0, padx=4, pady=10)
+    textboxHour.grid(row=0, column=1)
+    frameHour.pack(side=tk.TOP)
 
     screenCreateReminders.protocol("WM_DELETE_WINDOW", functools.partial(onCloseCreateReminder, screenCreateReminders, buttonCreateReminder))
 
@@ -309,7 +318,8 @@ def buttonStatisticsListener(mainScreen, buttonStatistics):
     screenCreateReminderIcon = getIconOfSpecificScreen('statisticsScreen')
     if screenCreateReminderIcon:
         screenStatistics.iconbitmap(screenCreateReminderIcon)
-    screenStatistics.focus_set()
+    screenStatistics.wm_attributes("-topmost", 1)
+    screenStatistics.focus_force()
     screenStatistics.geometry("700x500")
     buttonStatistics['state'] = 'disabled'
     #SpLog-CreateScreen ... do screen --> https://www.youtube.com/watch?v=8exB6Ly3nx0
@@ -322,11 +332,12 @@ def buttonListRemindersListener(mainScreen, buttonListReminders):
     screenCreateReminderIcon = getIconOfSpecificScreen('remindersList')
     if screenCreateReminderIcon:
         screenListReminders.iconbitmap(screenCreateReminderIcon)
-    screenListReminders.focus_set()
+    screenListReminders.wm_attributes("-topmost", 1)
+    screenListReminders.focus_force()
     screenListReminders.geometry("700x500")
     buttonListReminders['state'] = 'disabled'
     tk.Label(screenListReminders, text="Llistat recordatoris").pack(padx=10, pady=10)
-    #SpLog-CreateScreen ... do list
+
     frameTree = tk.Frame(screenListReminders)
     tree = ttk.Treeview(frameTree)
     tree["columns"] = ("C1", "C2")
@@ -337,8 +348,10 @@ def buttonListRemindersListener(mainScreen, buttonListReminders):
     tree.heading("C1", text="Esport", anchor=tk.W)
     tree.heading("C2", text="Dia esport", anchor=tk.W)
 
-    for i in range(20):
-        tree.insert("", i, text="Rem. {}".format(i), values=("esport","dia esport"))
+    reminders = execute("SELECT r.id, e.nom_esport, r.dia FROM recordatori r INNER JOIN esport e ON r.esport = e.id ORDER BY r.dia DESC")
+    
+    for reminder in reminders:
+        tree.insert("", reminder[0], text="Rem. {}".format(reminder[0]), values=(reminder[1],reminder[2].strftime("%d-%m-%Y")))
 
     vsb = ttk.Scrollbar(frameTree, orient="vertical", command=tree.yview)
     tree.configure(yscrollcommand=vsb.set)

@@ -41,7 +41,8 @@ def setPositionOfElementsInFrame(dictParams):
 
         buttonCreate = generateCreateButton({
             'frame': frameButtonsLogActions,
-            'screen': dictParams['screen']
+            'screen': dictParams['screen'],
+            'treeView': tree
         })
 
         buttonEditLog = generateEditLogButton({
@@ -73,9 +74,9 @@ def setPositionOfElementsInFrame(dictParams):
         tree.heading("C3", text="Dia esport", anchor=tk.W)
         tree.heading("C4", text="Dificultat", anchor=tk.W)
 
-        
-        for i in range(20):
-            tree.insert("", i, text="Log {}".format(i), values=("esport","durada","diaesport", "dificultat"))
+        sportLogs = execute("SELECT e.id, sp.nom_esport, e.durada, e.dia_esport, d.dificultat FROM esport_log e INNER JOIN esport sp ON sp.id = e.esport INNER JOIN dificultat d ON d.id = e.dificultat ORDER BY e.dia_esport DESC")
+        for spLog in sportLogs:
+            tree.insert("", spLog[0], text="Log {}".format(spLog[0]), values=(spLog[1],spLog[2].split(":")[0]+" h:"+spLog[2].split(":")[1]+" m:"+spLog[2].split(":")[2]+" s",spLog[3].strftime("%d-%m-%Y"), spLog[4]))
         
         vsb = ttk.Scrollbar(frameTree, orient="vertical", command=tree.yview)
         tree.configure(yscrollcommand=vsb.set)
@@ -120,7 +121,7 @@ def generateDeleteLogButton(configParams):
 
 def generateCreateButton(configParams):
     buttonCreateLog = ttk.Button(master = configParams['frame'], text="Crear Log")
-    buttonCreateLog['command'] = functools.partial(buttonCreateLogListener,configParams['screen'], buttonCreateLog)
+    buttonCreateLog['command'] = functools.partial(buttonCreateLogListener,configParams['screen'], buttonCreateLog, configParams['treeView'])
     return buttonCreateLog
 
 def generateFrames(screen):
@@ -137,6 +138,8 @@ def setWindowAttributes():
     if programIcon:
         root.iconbitmap(programIcon)
     root.winfo_toplevel().title("Sport log - CONTROL DE LA RUTINA ESPORTIVA")
+    root.wm_attributes("-topmost", 1)
+    root.focus_force()
     return root
 
 def executeScreen(tkScreen):
