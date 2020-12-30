@@ -313,18 +313,9 @@ def buttonCreateReminderListener(mainScreen, buttonCreateReminder):
     screenCreateReminders.protocol("WM_DELETE_WINDOW", functools.partial(onCloseCreateReminder, screenCreateReminders, buttonCreateReminder))
 
 def buttonStatisticsListener(mainScreen, buttonStatistics):
-    screenStatistics = tk.Toplevel(mainScreen)
-    screenStatistics.winfo_toplevel().title("Sport log - ESTADÍSTIQUES")
-    screenCreateReminderIcon = getIconOfSpecificScreen('statisticsScreen')
-    if screenCreateReminderIcon:
-        screenStatistics.iconbitmap(screenCreateReminderIcon)
-    screenStatistics.wm_attributes("-topmost", 1)
-    screenStatistics.focus_force()
-    screenStatistics.geometry("700x500")
     buttonStatistics['state'] = 'disabled'
-    #SpLog-CreateScreen ... do screen --> https://www.youtube.com/watch?v=8exB6Ly3nx0
-    statistics()
-    screenStatistics.protocol("WM_DELETE_WINDOW", functools.partial(onCloseStatistics, screenStatistics, buttonStatistics))
+    screenStatisticsIcon = getIconOfSpecificScreen('statisticsScreen')
+    statistics(screenStatisticsIcon, buttonStatistics)
 
 def buttonListRemindersListener(mainScreen, buttonListReminders):
     screenListReminders = tk.Toplevel(mainScreen)
