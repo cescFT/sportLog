@@ -100,7 +100,7 @@ def buttonCreateLogListener(mainScreen, buttonCreateLog, treeView):
     # 3- Duration
     frameDuration = tk.Frame(screenFormCreateLog)
     labelTimeElapsed = tk.Label(frameDuration, text = "Durada (h,m,s)").grid(row=0, column=0, padx=4, pady=10)
-    hourPicker = ttk.Spinbox(frameDuration, from_=1, to=23, wrap=True, width=5, state="readonly")
+    hourPicker = ttk.Spinbox(frameDuration, from_=0, to=23, wrap=True, width=5, state="readonly")
     hourPicker['command'] = functools.partial(getDuration,hourPicker, 'hora', infoToSave)
     hourPicker.grid(row=0, column=1)
     tk.Label(frameDuration, text="h").grid(row=0,column=2)
