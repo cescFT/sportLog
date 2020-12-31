@@ -10,6 +10,90 @@ from logsManager.statisticsManager import *
 from logsManager.dbConnection import execute
 from tkcalendar import Calendar, DateEntry
 import datetime
+import calendar
+
+def calculateDurationPerHour(entryInitialHour, entryFinalHour, screenFormCreateLog, initialDate, infoToSave):
+    if entryInitialHour.get() and entryFinalHour.get():
+        try:
+            initialHour = int(entryInitialHour.get().split(':')[0])
+            initialMinutes = int(entryInitialHour.get().split(':')[1])
+        except Exception:
+            tk.messagebox.showerror(title='Error hora inicial', message='La hora inicial no presenta un format correcte --> hh:mm. Per exemple: 10:30.')
+            screenFormCreateLog.wm_attributes("-topmost", 1)
+            screenFormCreateLog.focus_force()
+        try:
+            finalHour = int(entryFinalHour.get().split(":")[0])
+            finalMinutes = int(entryFinalHour.get().split(":")[1])
+        except Exception:
+            tk.messagebox.showerror(title="Error hora final", message="La hora final no presenta un format correcte --> hh:mm. Per exemple: 11:40.")
+            screenFormCreateLog.wm_attributes("-topmost", 1)
+            screenFormCreateLog.focus_force()
+        
+        initialTime = "{}:{}".format(initialHour, initialMinutes)
+        finalTime = "{}:{}".format(finalHour, finalMinutes)
+        dtInitialTime = datetime.datetime.strptime(finalTime, "%H:%M")
+        dtFinalTime = datetime.datetime.strptime(initialTime, "%H:%M")
+        if dtFinalTime <= dtInitialTime:
+            tdelta = dtInitialTime - dtFinalTime
+        else:
+            initialTime = "{}-{}-{} {}:{}".format(initialDate.day, initialDate.month, initialDate.year, initialHour, initialMinutes)
+            if initialDate.day == 31 and initialDate.month == 12:
+                finalTime = "{}-{}-{} {}:{}".format(1, 1, initialDate.year+1, finalHour, finalMinutes)
+            else:
+                if calendar.monthlen(initialDate.year, initialDate.month) == initialDate.day:
+                    finalTime = "{}-{}-{} {}:{}".format(1, initialDate.month+1, initialDate.year, finalHour, finalMinutes)
+                else:
+                    finalTime = "{}-{}-{} {}:{}".format(initialDate.day+1, initialDate.month, initialDate.year, finalHour, finalMinutes)
+            
+            
+            dtInitialTime = datetime.datetime.strptime(finalTime, "%d-%m-%Y %H:%M")
+            dtFinalTime = datetime.datetime.strptime(initialTime, "%d-%m-%Y %H:%M")
+            tdelta = dtInitialTime - dtFinalTime
+        
+        seconds = tdelta.total_seconds()
+        hours = seconds // 3600
+        minutes = (seconds % 3600) // 60
+        seconds = seconds % 60
+        infoToSave['hora'] = str(int(hours))
+        infoToSave['minuts'] = str(int(minutes))
+        infoToSave['segons'] = str(int(seconds))
+        tk.messagebox.showinfo(title="Temps calculat", message="{}h:{}m:{}s".format(infoToSave['hora'], infoToSave['minuts'], infoToSave['segons']))
+        screenFormCreateLog.wm_attributes("-topmost", 1)
+        screenFormCreateLog.focus_force()
+    else:
+        tk.messagebox.showerror(title="Falten camps per omplir!", message="Cal omplir els dos camps per calcular la durada.")
+        screenFormCreateLog.wm_attributes("-topmost", 1)
+        screenFormCreateLog.focus_force()
+
+def radioButtonEventDuration(radioButtonHour, radioButtonDuration, variableRadioButtonDuration, frameDuration, infoToSave, screenFormCreateLog):
+    for widget in frameDuration.winfo_children():
+       widget.destroy()
+    
+    if variableRadioButtonDuration.get() == '0':
+        labelTimeElapsed = tk.Label(frameDuration, text = "Durada (h,m,s)").grid(row=1, column=0, padx=4, pady=10)
+        hourPicker = ttk.Spinbox(frameDuration, from_=0, to=23, wrap=True, width=5, state="readonly")
+        hourPicker['command'] = functools.partial(getDuration,hourPicker, 'hora', infoToSave)
+        hourPicker.grid(row=1, column=1)
+        tk.Label(frameDuration, text="h").grid(row=1,column=2)
+        minutePicker = ttk.Spinbox(frameDuration, from_=0, to=59, wrap=True, width=5, state="readonly")
+        minutePicker['command'] = functools.partial(getDuration, minutePicker, 'minuts', infoToSave)
+        minutePicker.grid(row=1, column=3)
+        tk.Label(frameDuration, text="m").grid(row=1, column=4)
+        secondsPicker = ttk.Spinbox(frameDuration, from_=0, to=59, wrap=True, width=5, state="readonly")
+        secondsPicker['command'] = functools.partial(getDuration, secondsPicker, 'segons', infoToSave)
+        secondsPicker.grid(row=1, column=5)
+        tk.Label(frameDuration, text="s").grid(row=1,column=6)
+    else:
+        tk.Label(frameDuration, text="Hora inici (hh:mm)").grid(row=1, column=0, padx=4, pady=10)
+        entryInitialHour = ttk.Entry(frameDuration)
+        entryInitialHour.grid(row=1, column = 1) 
+        tk.Label(frameDuration, text="Hora final (hh:mm)").grid(row=1, column=2, padx=4, pady=10)
+        entryFinalHour = ttk.Entry(frameDuration)
+        entryFinalHour.grid(row=1, column = 3)
+        buttonCalculateDurationPerHour = ttk.Button(frameDuration, text="Calcular durada")
+        buttonCalculateDurationPerHour['command'] = functools.partial(calculateDurationPerHour, entryInitialHour, entryFinalHour, screenFormCreateLog, infoToSave['date'], infoToSave)
+        buttonCalculateDurationPerHour.grid(row=1, column=4, padx=4)
+
 
 def getDuration(spinner, durationType, infoToSave):
     infoToSave[durationType] = spinner.get()
@@ -99,20 +183,15 @@ def buttonCreateLogListener(mainScreen, buttonCreateLog, treeView):
 
     # 3- Duration
     frameDuration = tk.Frame(screenFormCreateLog)
-    labelTimeElapsed = tk.Label(frameDuration, text = "Durada (h,m,s)").grid(row=0, column=0, padx=4, pady=10)
-    hourPicker = ttk.Spinbox(frameDuration, from_=0, to=23, wrap=True, width=5, state="readonly")
-    hourPicker['command'] = functools.partial(getDuration,hourPicker, 'hora', infoToSave)
-    hourPicker.grid(row=0, column=1)
-    tk.Label(frameDuration, text="h").grid(row=0,column=2)
-    minutePicker = ttk.Spinbox(frameDuration, from_=0, to=59, wrap=True, width=5, state="readonly")
-    minutePicker['command'] = functools.partial(getDuration, minutePicker, 'minuts', infoToSave)
-    minutePicker.grid(row=0, column=3)
-    tk.Label(frameDuration, text="m").grid(row=0, column=4)
-    secondsPicker = ttk.Spinbox(frameDuration, from_=0, to=59, wrap=True, width=5, state="readonly")
-    secondsPicker['command'] = functools.partial(getDuration, secondsPicker, 'segons', infoToSave)
-    secondsPicker.grid(row=0, column=5)
-    tk.Label(frameDuration, text="s").grid(row=0,column=6)
-
+    frameDurationType = tk.Frame(screenFormCreateLog)
+    variableRadioButtonDuration = tk.StringVar(frameDurationType)
+    rButtonHour = ttk.Radiobutton(frameDurationType,  text="Per hores", variable = variableRadioButtonDuration, value = '1')
+    rButtonDuration = ttk.Radiobutton(frameDurationType,  text="Per durada", variable = variableRadioButtonDuration, value = '0')
+    rButtonHour['command'] = functools.partial(radioButtonEventDuration, rButtonHour, rButtonDuration, variableRadioButtonDuration, frameDuration, infoToSave, screenFormCreateLog)
+    rButtonDuration['command'] = functools.partial(radioButtonEventDuration, rButtonHour, rButtonDuration, variableRadioButtonDuration, frameDuration, infoToSave, screenFormCreateLog)
+    rButtonHour.grid(row=0, column=0)
+    rButtonDuration.grid(row=0, column=1)
+    frameDurationType.pack(side=tk.TOP)
     frameDuration.pack(side=tk.TOP)
     
     # 4- Difficculty
